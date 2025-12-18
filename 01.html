@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CitrusLink - 智橘云控 Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- 基础样式 --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+            background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        /* --- 玻璃拟态组件 --- */
+        .glass-window {
+            background: rgba(34, 34, 104, 0.65);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-sidebar {
+            background: rgba(20, 20, 25, 0.4);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-content {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .glass-card {
+            background: rgba(40, 40, 45, 0.7);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-active {
+            background: rgba(10, 132, 255, 0.9);
+            color: white;
+            box-shadow: 0 2px 10px rgba(10, 132, 255, 0.3);
+        }
+
+        .pulse-dot {
+            box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(52, 211, 153, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+            }
+        }
+
+        .map-grid {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        .map-object {
+            position: absolute;
+            transition: all 1s ease-in-out;
+        }
+
+        /* --- 模态框样式 --- */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(30, 30, 40, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        input,
+        select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        /* 修复 select 选项背景色 */
+        select option {
+            background-color: #1f2937;
+            color: white;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: rgba(59, 130, 246, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-action {
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+
+<body class="h-screen w-screen flex items-center justify-center overflow-hidden text-gray-200">
+
+    <div class="glass-window w-[90%] h-[90%] rounded-2xl flex overflow-hidden relative transition-all duration-500">
+
+        <aside class="w-64 glass-sidebar flex flex-col pt-5 pb-6 px-4 z-20">
+            <div class="flex space-x-2 px-2 mb-8">
+                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            </div>
+
+            <div class="px-2 mb-8 flex items-center">
+                <div
+                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center shadow-lg mr-3">
+                    <i class="fa-solid fa-leaf text-white text-xs"></i>
+                </div>
+                <div>
+                    <h1 class="text-white font-semibold text-sm tracking-wide">CitrusLink</h1>
+                    <p class="text-xs text-gray-400 font-light">智橘云控 Pro</p>
+                </div>
+            </div>
+
+            <nav class="flex-1 space-y-1">
+                <div class="text-[10px] font-bold text-gray-500 uppercase px-3 mb-2 tracking-widest">Platform</div>
+                <a href="#" onclick="switchTab('dashboard', this)"
+                    class="nav-item nav-active flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+                    <i class="fa-solid fa-earth-asia w-6 text-center"></i><span class="ml-2">数字孪生监控</span>
+                </a>
+                <a href="#" onclick="switchTab('tasks', this)"
+                    class="nav-item text-gray-400 hover:bg-white/10 hover:text-white flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+                    <i class="fa-solid fa-list-check w-6 text-center"></i><span class="ml-2">协同任务调度</span>
+                </a>
+            </nav>
+
+            <div class="mt-auto pt-4 border-t border-white/10">
+                <div class="flex items-center px-2">
+                    <div class="w-2 h-2 rounded-full bg-green-500 pulse-dot mr-3"></div>
+                    <span class="text-xs text-gray-400">ROS 2 数据链路正常</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 glass-content flex flex-col relative overflow-hidden">
+            <header class="h-14 flex items-center justify-between px-6 border-b border-white/5 z-20">
+                <h2 id="page-title" class="text-white font-medium text-lg tracking-tight">全局态势感知</h2>
+                <div class="flex items-center space-x-4">
+                    <div class="text-xs text-gray-400">Database: PostgreSQL 14 (Connected)</div>
+                    <div
+                        class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                        A</div>
+                </div>
+            </header>
+
+            <div id="view-dashboard" class="flex-1 relative map-grid">
+                <div id="map-container" class="absolute inset-0 w-full h-full"></div>
+
+                <div class="absolute top-6 right-6 w-72 glass-card rounded-2xl p-5 z-10">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">System Status</h3>
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white/5 rounded-xl p-3">
+                            <div class="text-gray-400 text-[10px] mb-1">在线设备</div>
+                            <div class="text-2xl font-light text-white font-mono">
+                                <span id="stat-online">--</span><span class="text-xs text-gray-500 ml-1"
+                                    id="stat-total">/--</span>
+                            </div>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-3">
+                            <div class="text-gray-400 text-[10px] mb-1">任务进度</div>
+                            <div class="text-2xl font-light text-green-400 font-mono">
+                                <span id="stat-rate">--</span><span class="text-xs text-gray-500 ml-1">%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex justify-between text-[10px] text-gray-400 mb-1">
+                            <span>Battery Avg</span>
+                            <span id="stat-battery-text">--%</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
+                            <div id="stat-battery-bar"
+                                class="h-full bg-gradient-to-r from-green-400 to-blue-500 w-[0%] transition-all duration-1000">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="absolute bottom-6 left-6 right-6 h-12 glass-card rounded-xl flex items-center px-4">
+                    <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3">
+                        <i class="fa-solid fa-circle-info text-blue-500 text-xs"></i>
+                    </div>
+                    <span class="text-sm text-gray-300">系统运行正常，等待新的调度指令。</span>
+                </div>
+            </div>
+
+            <div id="view-tasks" class="hidden flex-1 bg-transparent p-6 overflow-auto">
+                <div class="flex justify-between items-end mb-6">
+                    <h3 class="text-2xl font-light text-white mb-1">任务队列 <span
+                            class="text-sm text-gray-500 ml-2">(实时从数据库同步)</span></h3>
+                    <div class="flex gap-2">
+                        <button onclick="openCreateTaskModal()"
+                            class="bg-green-600 hover:bg-green-500 text-white text-sm px-4 py-2 rounded-lg transition btn-action">
+                            <i class="fa-solid fa-plus mr-2"></i> 创建任务
+                        </button>
+                        <button onclick="openCreateRobotModal()"
+                            class="bg-purple-600 hover:bg-purple-500 text-white text-sm px-4 py-2 rounded-lg transition btn-action">
+                            <i class="fa-solid fa-robot mr-2"></i> 添加机器人
+                        </button>
+                        <button onclick="fetchTasks()"
+                            class="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded-lg transition btn-action">
+                            <i class="fa-solid fa-rotate mr-2"></i> 刷新
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl overflow-hidden border border-white/10 mb-8">
+                    <table class="w-full text-left">
+                        <thead class="bg-white/5 text-xs text-gray-400 uppercase border-b border-white/5">
+                            <tr>
+                                <th class="px-6 py-4">Task ID</th>
+                                <th class="px-6 py-4">Target Area</th>
+                                <th class="px-6 py-4">Priority</th>
+                                <th class="px-6 py-4">Assigned To</th>
+                                <th class="px-6 py-4">Status</th>
+                                <th class="px-6 py-4">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="task-table-body" class="divide-y divide-white/5 text-sm">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-light text-white mb-4">机器人状态</h3>
+                    <div id="robot-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="createTaskModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-white">创建新任务</h3>
+                <button onclick="closeModal('createTaskModal')" class="text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="createTaskForm" onsubmit="createTask(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">目标区域</label>
+                    <input type="text" name="target_area" placeholder="例如: Area-A, Area-B" required class="w-full">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">优先级</label>
+                    <select name="priority" required class="w-full">
+                        <option value="0">Low (低)</option>
+                        <option value="1" selected>Medium (中)</option>
+                        <option value="2">High (高)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">分配机器人 (可选)</label>
+                    <select name="assigned_robot_id" id="task-robot-select" class="w-full">
+                        <option value="">未分配</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 pt-4">
+                    <button type="submit"
+                        class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg btn-action">
+                        <i class="fa-solid fa-check mr-2"></i> 创建
+                    </button>
+                    <button type="button" onclick="closeModal('createTaskModal')"
+                        class="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-2 rounded-lg btn-action">
+                        取消
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="createRobotModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-white">添加新机器人</h3>
+                <button onclick="closeModal('createRobotModal')" class="text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="createRobotForm" onsubmit="createRobot(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">机器人 ID</label>
+                    <input type="text" name="id" placeholder="例如: UGV-02" required class="w-full">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">IP 地址</label>
+                    <input type="text" name="ip_address" placeholder="例如: 192.168.1.102" required class="w-full">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">初始电量 (%)</label>
+                    <input type="number" name="battery_level" value="100" min="0" max="100" required class="w-full">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">状态</label>
+                    <select name="status" required class="w-full">
+                        <option value="OFFLINE" selected>OFFLINE (离线)</option>
+                        <option value="ONLINE">ONLINE (在线)</option>
+                        <option value="CHARGING">CHARGING (充电中)</option>
+                        <option value="WORKING">WORKING (工作中)</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 pt-4">
+                    <button type="submit"
+                        class="flex-1 bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg btn-action">
+                        <i class="fa-solid fa-check mr-2"></i> 添加
+                    </button>
+                    <button type="button" onclick="closeModal('createRobotModal')"
+                        class="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-2 rounded-lg btn-action">
+                        取消
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editTaskModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-white">编辑任务</h3>
+                <button onclick="closeModal('editTaskModal')" class="text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="editTaskForm" onsubmit="updateTask(event)" class="space-y-4">
+                <input type="hidden" name="task_id" id="edit-task-id">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">任务状态</label>
+                    <select name="status" id="edit-task-status" required class="w-full">
+                        <option value="PENDING">PENDING (待处理)</option>
+                        <option value="IN_PROGRESS">IN_PROGRESS (进行中)</option>
+                        <option value="COMPLETED">COMPLETED (已完成)</option>
+                        <option value="FAILED">FAILED (失败)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">优先级</label>
+                    <select name="priority" id="edit-task-priority" required class="w-full">
+                        <option value="0">Low (低)</option>
+                        <option value="1">Medium (中)</option>
+                        <option value="2">High (高)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">分配机器人</label>
+                    <select name="assigned_robot_id" id="edit-task-robot" class="w-full">
+                        <option value="">未分配</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 pt-4">
+                    <button type="submit"
+                        class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg btn-action">
+                        <i class="fa-solid fa-save mr-2"></i> 保存
+                    </button>
+                    <button type="button" onclick="closeModal('editTaskModal')"
+                        class="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-2 rounded-lg btn-action">
+                        取消
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. 页面切换逻辑 ---
+        function switchTab(tabId, el) {
+            document.getElementById('view-dashboard').classList.add('hidden');
+            document.getElementById('view-tasks').classList.add('hidden');
+            document.getElementById('view-' + tabId).classList.remove('hidden');
+
+            const titles = { 'dashboard': '全局态势感知', 'tasks': '协同任务调度' };
+            document.getElementById('page-title').innerText = titles[tabId];
+
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('nav-active');
+                item.classList.add('text-gray-400', 'hover:bg-white/10');
+            });
+            el.classList.remove('text-gray-400', 'hover:bg-white/10');
+            el.classList.add('nav-active');
+
+            if (tabId === 'tasks') {
+                fetchTasks();
+                fetchRobots();
+            }
+            if (tabId === 'dashboard') { fetchStats(); fetchMapData(); }
+        }
+
+        // --- 2. API 交互逻辑 ---
+
+        // 获取仪表盘统计
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/dashboard/stats');
+                const data = await res.json();
+                document.getElementById('stat-online').innerText = data.online_count;
+                document.getElementById('stat-total').innerText = '/' + data.total_robots;
+                document.getElementById('stat-rate').innerText = data.task_rate;
+                document.getElementById('stat-battery-text').innerText = data.battery_avg + '%';
+                document.getElementById('stat-battery-bar').style.width = data.battery_avg + '%';
+            } catch (e) { console.error("Stats error", e); }
+        }
+
+        // 获取任务列表
+        async function fetchTasks() {
+            const tbody = document.getElementById('task-table-body');
+            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading...</td></tr>';
+            try {
+                const res = await fetch('/api/tasks');
+                const tasks = await res.json();
+                tbody.innerHTML = '';
+                tasks.forEach(t => {
+                    let priorityColor = t.priority_val === 2 ? 'text-red-400 bg-red-500/20' : (t.priority_val === 1 ? 'text-yellow-400 bg-yellow-500/20' : 'text-gray-400 bg-gray-500/20');
+                    let statusDot = t.status === 'IN_PROGRESS' ? 'bg-blue-500 animate-pulse' : (t.status === 'COMPLETED' ? 'bg-green-500' : 'bg-gray-500');
+
+                    const row = `
+                        <tr class="hover:bg-white/5 transition">
+                            <td class="px-6 py-4 font-mono text-blue-400">#${t.id}</td>
+                            <td class="px-6 py-4 text-gray-300">${t.target}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-0.5 rounded text-xs font-medium ${priorityColor} border border-white/5">${t.priority}</span>
+                            </td>
+                            <td class="px-6 py-4 text-gray-400 flex items-center">
+                                <i class="fa-solid fa-robot mr-2"></i> ${t.assigned_to}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <div class="h-1.5 w-1.5 rounded-full ${statusDot} mr-2"></div>
+                                    <span class="text-gray-300">${t.status}</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex gap-3">
+                                    <button onclick="openEditTaskModal('${t.full_id}', '${t.status}', ${t.priority_val}, '${t.assigned_to}')" class="text-blue-400 hover:text-blue-300" title="编辑"><i class="fa-solid fa-pen-to-square"></i></button>
+                                    <button onclick="deleteTask('${t.full_id}')" class="text-red-400 hover:text-red-300" title="删除"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (e) {
+                console.error("Task error", e);
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-red-400">加载失败</td></tr>';
+            }
+        }
+
+        // 获取机器人列表
+        async function fetchRobots() {
+            const container = document.getElementById('robot-list');
+            try {
+                const res = await fetch('/api/robots');
+                const robots = await res.json();
+                container.innerHTML = '';
+                robots.forEach(r => {
+                    let statusColor = r.status === 'ONLINE' ? 'text-green-400' : 'text-gray-400';
+                    const card = `
+                        <div class="glass-card p-4 rounded-xl border border-white/10 relative">
+                             <button onclick="deleteRobot('${r.id}')" class="absolute top-2 right-2 text-gray-500 hover:text-red-400 transition" title="删除设备">
+                                <i class="fa-solid fa-times"></i>
+                            </button>
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h4 class="text-white font-mono font-bold">${r.id}</h4>
+                                    <p class="text-xs text-gray-400 font-mono">${r.ip_address}</p>
+                                </div>
+                                <i class="fa-solid fa-robot text-2xl ${statusColor}"></i>
+                            </div>
+                            <div class="space-y-2 mt-3">
+                                <div class="flex justify-between text-xs text-gray-400">
+                                    <span>Battery</span>
+                                    <span>${r.battery_level}%</span>
+                                </div>
+                                <div class="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-green-500" style="width: ${r.battery_level}%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                    <span>Load: ${r.current_load}kg</span>
+                                    <span class="text-white">${r.status}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += card;
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        // 获取地图数据
+        async function fetchMapData() {
+            const container = document.getElementById('map-container');
+            container.innerHTML = '';
+            try {
+                const res = await fetch('/api/map/objects');
+                const data = await res.json();
+
+                data.targets.forEach(t => {
+                    const el = document.createElement('div');
+                    el.className = 'map-object absolute text-xl';
+                    el.style.left = t.x + '%';
+                    el.style.top = t.y + '%';
+                    el.innerHTML = '🍊';
+                    container.appendChild(el);
+                });
+
+                data.robots.forEach(r => {
+                    const el = document.createElement('div');
+                    el.className = 'map-object absolute flex flex-col items-center';
+                    el.style.left = r.x + '%';
+                    el.style.top = r.y + '%';
+                    el.innerHTML = `
+                        <div class="relative w-8 h-8 rounded-xl bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.5)] flex items-center justify-center border border-white/20 z-10">
+                            <i class="fa-solid fa-truck text-white text-[10px]"></i>
+                        </div>
+                        <div class="mt-1 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-0.5 rounded-md border border-white/10 whitespace-nowrap">
+                            ${r.id}
+                        </div>
+                    `;
+                    container.appendChild(el);
+                });
+            } catch (e) { console.error("Map error", e); }
+        }
+
+        // --- 3. 模态框与表单处理 ---
+
+        // 辅助：填充机器人下拉框
+        async function populateRobotSelect(selectId, selectedId = null) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">未分配</option>';
+            try {
+                const res = await fetch('/api/robots');
+                const robots = await res.json();
+                robots.forEach(r => {
+                    const option = document.createElement('option');
+                    option.value = r.id;
+                    option.text = `${r.id} (${r.status})`;
+                    if (r.id === selectedId) option.selected = true;
+                    select.appendChild(option);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        // 创建任务
+        async function openCreateTaskModal() {
+            await populateRobotSelect('task-robot-select');
+            document.getElementById('createTaskModal').classList.add('active');
+        }
+
+        async function createTask(e) {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                priority: parseInt(form.priority.value),
+                type: "PICKING",
+                target_area: form.target_area.value,
+                assigned_robot_id: form.assigned_robot_id.value || null
+            };
+
+            try {
+                const res = await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    closeModal('createTaskModal');
+                    form.reset();
+                    fetchTasks();
+                } else alert('创建失败: ' + await res.text());
+            } catch (err) { alert('请求错误'); }
+        }
+
+        // 添加机器人
+        function openCreateRobotModal() { document.getElementById('createRobotModal').classList.add('active'); }
+
+        async function createRobot(e) {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                id: form.id.value,
+                ip_address: form.ip_address.value,
+                battery_level: parseFloat(form.battery_level.value),
+                current_load: 0.0,
+                status: form.status.value
+            };
+
+            try {
+                const res = await fetch('/api/robots', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    closeModal('createRobotModal');
+                    form.reset();
+                    fetchRobots();
+                } else alert('创建失败: ' + await res.text());
+            } catch (err) { alert('请求错误'); }
+        }
+
+        // 编辑任务
+        async function openEditTaskModal(id, status, priority, robotId) {
+            document.getElementById('edit-task-id').value = id;
+            document.getElementById('edit-task-status').value = status;
+            document.getElementById('edit-task-priority').value = priority;
+
+            // 处理 robotId 可能为 "--" 或 null 的情况
+            const realRobotId = (robotId === '--' || robotId === 'null') ? null : robotId;
+            await populateRobotSelect('edit-task-robot', realRobotId);
+
+            document.getElementById('editTaskModal').classList.add('active');
+        }
+
+        async function updateTask(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-task-id').value;
+            const form = e.target;
+            const data = {
+                status: form.status.value,
+                priority: parseInt(form.priority.value),
+                assigned_robot_id: form.assigned_robot_id.value || null
+            };
+
+            try {
+                const res = await fetch(`/api/tasks/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    closeModal('editTaskModal');
+                    fetchTasks();
+                } else alert('更新失败');
+            } catch (err) { alert('请求错误'); }
+        }
+
+        // 删除任务
+        async function deleteTask(id) {
+            if (!confirm('确定要删除这个任务吗？')) return;
+            try {
+                const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+                if (res.ok) fetchTasks();
+                else alert('删除失败');
+            } catch (err) { alert('请求错误'); }
+        }
+
+        // 删除机器人
+        async function deleteRobot(id) {
+            if (!confirm('确定要删除这台机器人吗？')) return;
+            try {
+                const res = await fetch(`/api/robots/${id}`, { method: 'DELETE' });
+                if (res.ok) fetchRobots();
+                else alert('删除失败: 可能有任务正在执行');
+            } catch (err) { alert('请求错误'); }
+        }
+
+        // --- 初始化 ---
+        window.onload = function () {
+            fetchStats();
+            fetchMapData();
+        };
+
+        setInterval(fetchMapData, 5000); // 实时刷新地图
+    </script>
+</body>
+
+</html>
